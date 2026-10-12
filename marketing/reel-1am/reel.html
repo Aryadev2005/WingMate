@@ -1,0 +1,217 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  /* 1080x1920 vertical Reel. Instagram covers the top ~220px and bottom ~380px with UI,
+     so every word that matters sits between y=240 and y=1540. */
+  :root { --bg:#0E0A16; --ink:#F4EFFA; --muted:#9C93B0; --line:#2B2340; --accent:#FF4F7B; --them:#2A2238; --you:#FF4F7B; --draft:#FFE9A8; --draftInk:#3A2C00; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { width:1080px; height:1920px; overflow:hidden; background:var(--bg); font-family:"Inter", "Noto Color Emoji", sans-serif; color:var(--ink); }
+  #stage { position:absolute; inset:0; overflow:hidden; }
+  #glow { position:absolute; width:1400px; height:1400px; left:-160px; top:300px; border-radius:50%;
+          background:radial-gradient(circle, rgba(255,79,123,.22), rgba(255,79,123,0) 60%); }
+  #cap { position:absolute; left:70px; right:70px; top:250px; text-align:center; font-family:"Inter Display","Inter",sans-serif;
+         font-weight:800; font-size:76px; line-height:1.05; letter-spacing:-2px; }
+  #cap em { font-style:normal; color:var(--accent); }
+
+  #phone { position:absolute; left:150px; width:780px; top:470px; height:1080px; border-radius:64px; background:#15101F;
+           border:3px solid #2E2642; box-shadow:0 40px 120px rgba(0,0,0,.6); overflow:hidden; transform-origin:50% 50%; }
+  .head { height:150px; display:flex; align-items:center; gap:22px; padding:40px 40px 0; border-bottom:2px solid var(--line); }
+  .ava { width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg,#7E6BFF,#FF7FA8); display:grid; place-items:center; font-weight:800; font-size:34px; }
+  .who { font-weight:700; font-size:34px; } .who small { display:block; font-weight:500; font-size:24px; color:var(--muted); }
+  #chat { position:absolute; left:0; right:0; top:150px; bottom:150px; padding:36px 36px; display:flex; flex-direction:column; gap:16px; justify-content:flex-end; overflow:hidden; }
+  .time { align-self:center; font-size:24px; color:var(--muted); margin-bottom:6px; }
+  .b { max-width:78%; padding:22px 28px; border-radius:38px; font-size:40px; line-height:1.22; font-weight:500; }
+  .them { align-self:flex-start; background:var(--them); border-bottom-left-radius:12px; }
+  .you { align-self:flex-end; background:var(--you); color:#fff; border-bottom-right-radius:12px; }
+  .meta { align-self:flex-end; font-size:22px; color:var(--muted); }
+  .dots { align-self:flex-start; background:var(--them); border-radius:38px; padding:26px 30px; display:flex; gap:10px; }
+  .dots i { width:16px; height:16px; border-radius:50%; background:var(--muted); display:block; }
+  #input { position:absolute; left:28px; right:28px; bottom:34px; height:92px; border-radius:46px; border:2px solid var(--line);
+           display:flex; align-items:center; padding:0 34px; font-size:34px; color:var(--ink); }
+  #input .ph { color:var(--muted); }
+  #caret { display:inline-block; width:3px; height:40px; background:var(--accent); margin-left:3px; vertical-align:middle; }
+  #strike { position:absolute; left:30px; height:6px; top:43px; background:#FF3B3B; border-radius:3px; }
+
+  #stamp { position:absolute; left:0; right:0; top:760px; text-align:center; font-family:"Inter Display","Inter",sans-serif; font-weight:900;
+           font-size:150px; line-height:.92; letter-spacing:-5px; color:#fff; text-shadow:0 0 60px rgba(255,59,59,.8); }
+  #stamp span { display:inline-block; background:#FF2D55; padding:18px 36px 26px; transform:rotate(-4deg); border-radius:18px; }
+  #flash { position:absolute; inset:0; background:#fff; }
+
+  /* Wingmate panel (Reply Lab) */
+  #lab { position:absolute; left:0; right:0; bottom:0; top:110px; background:#17112A; border-top-left-radius:48px; border-top-right-radius:48px;
+         border-top:3px solid var(--accent); padding:40px 36px; display:flex; flex-direction:column; gap:24px; }
+  .brand { display:flex; align-items:center; gap:16px; font-weight:800; font-size:38px; letter-spacing:-.5px; }
+  .brand i { width:40px; height:40px; background:var(--accent); border-radius:50% 50% 50% 8px; display:block; }
+  .brand small { margin-left:auto; font-size:22px; font-weight:700; letter-spacing:2px; color:var(--accent); text-transform:uppercase; }
+  #shot { position:relative; height:220px; border-radius:24px; background:#221A36; overflow:hidden; display:flex; align-items:center; gap:18px; padding:0 26px; }
+  #shot .mini { font-size:28px; background:var(--them); padding:14px 20px; border-radius:24px; }
+  #shot .lbl { font-size:22px; color:var(--muted); margin-left:auto; }
+  #scan { position:absolute; left:0; right:0; height:6px; background:var(--accent); box-shadow:0 0 30px var(--accent); }
+  #read { font-size:32px; line-height:1.3; color:var(--ink); min-height:84px; }
+  #read b { color:var(--accent); font-weight:700; }
+  .card { border-radius:28px; padding:22px 26px; background:var(--draft); color:var(--draftInk); display:flex; flex-direction:column; gap:8px; }
+  .card .tag { font-size:20px; font-weight:800; letter-spacing:2px; }
+  .card .txt { font-size:32px; font-weight:600; line-height:1.22; }
+  #tap { position:absolute; width:120px; height:120px; border-radius:50%; border:6px solid #fff; }
+
+  #end { position:absolute; inset:0; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:40px; text-align:center; padding:0 80px; }
+  #end .logo { display:flex; align-items:center; gap:26px; font-weight:900; font-size:120px; letter-spacing:-4px; font-family:"Inter Display","Inter",sans-serif; }
+  #end .logo i { width:100px; height:100px; background:var(--accent); border-radius:50% 50% 50% 18px; display:block; }
+  #end .line { font-size:68px; font-weight:700; letter-spacing:-1px; }
+  #end .line em { font-style:normal; color:var(--accent); }
+  #end .cta { font-size:40px; font-weight:700; background:var(--accent); color:#fff; padding:26px 46px; border-radius:999px; }
+  #end .fine { font-size:24px; color:var(--muted); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="glow"></div>
+  <div id="cap"></div>
+  <div id="phone">
+    <div class="head"><div class="ava">J</div><div class="who">Jordan<small>active now</small></div></div>
+    <div id="chat">
+      <div class="time">Friday 11:02 PM</div>
+      <div class="b you">had the best time tonight</div>
+      <div class="b them">same!! let's do it again</div>
+      <div class="b you">sunday?</div>
+      <div class="meta">Read Friday</div>
+      <div class="time" id="today">Today 1:47 AM</div>
+      <div class="b them" id="wyd">wyd</div>
+      <div class="b you" id="sent"></div>
+      <div class="meta" id="readr">Read 1:49 AM</div>
+      <div class="dots" id="dots"><i></i><i></i><i></i></div>
+      <div class="b them" id="answer">ok that was smooth 😭 thursday?</div>
+    </div>
+    <div id="input"><span id="itext"></span><span id="caret"></span><span id="strike"></span></div>
+    <div id="lab">
+      <div class="brand"><i></i>Wingmate<small>Reply Lab</small></div>
+      <div id="shot"><span class="mini">wyd</span><span class="lbl">screenshot · 1:47 AM</span><div id="scan"></div></div>
+      <div id="read"></div>
+      <div class="card" id="c1"><span class="tag">CHILL</span><span class="txt">debating sleep vs one more episode. you?</span></div>
+      <div class="card" id="c2"><span class="tag">FLIRTY</span><span class="txt">texting me at 1am? interesting choice</span></div>
+      <div class="card" id="c3"><span class="tag">BOLD</span><span class="txt">wide awake and a little bored. fix that thursday?</span></div>
+      <div id="tap"></div>
+    </div>
+  </div>
+  <div id="stamp"><span>DON'T<br>SEND<br>THAT.</span></div>
+  <div id="flash"></div>
+  <div id="end">
+    <div class="logo"><i></i>Wingmate</div>
+    <div class="line">screenshot. tap. <em>send.</em></div>
+    <div class="cta">early access · link in bio</div>
+    <div class="fine">AI dating advice for 18+. Dramatization.</div>
+  </div>
+</div>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const clamp = (x) => Math.max(0, Math.min(1, x));
+  const seg = (t, a, b) => clamp((t - a) / (b - a));           // 0..1 progress of t through [a,b]
+  const outBack = (x) => { const c = 1.70158; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+  const outCubic = (x) => 1 - Math.pow(1 - x, 3);
+  const show = (el, on) => { el.style.display = on ? "" : "none"; };
+  const typed = (s, p) => s.slice(0, Math.round(s.length * clamp(p)));
+
+  const READ = "they're bored and thinking about you. <b>don't be the boring reply.</b> give them something to answer.";
+  const READ_PLAIN = READ.replace(/<[^>]+>/g, "");
+
+  // t in seconds. Every element's state is a pure function of t, so frames render deterministically.
+  window.render = (t) => {
+    // ---- captions (top)
+    let cap = "";
+    if (t < 2.4) cap = "left on read for 3 days.<br>then at 1:47am: <em>“wyd”</em>";
+    else if (t < 4.6) cap = "";
+    else if (t < 6.2) cap = "that reply ends the conversation.";
+    else if (t < 13.9) cap = "screenshot it. let <em>Wingmate</em> read it.";
+    else if (t < 17.6) cap = "pick one. send it.";
+    $("cap").innerHTML = cap;
+    $("cap").style.opacity = cap ? 1 : 0;
+
+    // ---- phone entrance + punch-in during the stamp
+    const enter = outCubic(seg(t, 0, 0.45));
+    const punch = t > 2.4 && t < 4.6 ? 1.06 + 0.02 * Math.sin((t - 2.4) * 40) * (1 - seg(t, 2.4, 2.9)) : 1;
+    $("phone").style.transform = `translateY(${(1 - enter) * 40}px) scale(${punch})`;
+    $("phone").style.opacity = 1;
+
+    // ---- "wyd" pops in after 3 days of silence
+    const pop = outBack(seg(t, 0.25, 0.6));
+    $("wyd").style.transform = `scale(${0.3 + 0.7 * pop})`;
+    $("wyd").style.transformOrigin = "0% 100%";
+    $("wyd").style.opacity = clamp(seg(t, 0.25, 0.35));
+    $("today").style.opacity = clamp(seg(t, 0.15, 0.3));
+
+    // ---- the boring reply being typed
+    const boring = "nothing much hbu";
+    const tp = seg(t, 0.6, 2.2);
+    $("itext").innerHTML = tp > 0 ? typed(boring, tp) : '<span class="ph">Message…</span>';
+    $("caret").style.opacity = t < 2.4 ? (Math.floor(t * 3) % 2 ? 0.2 : 1) : 0;
+    const st = seg(t, 2.45, 2.75);
+    $("strike").style.width = `${st * 300}px`;
+    $("strike").style.opacity = st > 0 && t < 5.2 ? 1 : 0;
+
+    // ---- stamp: DON'T SEND THAT.
+    const sIn = seg(t, 2.4, 2.62), sOut = seg(t, 4.3, 4.6);
+    $("stamp").style.opacity = t >= 2.4 && t < 4.6 ? 1 - sOut : 0;
+    $("stamp").style.transform = `scale(${t < 2.62 ? 2.4 - 1.4 * outBack(sIn) : 1 - 0.1 * sOut})`;
+
+    // ---- screenshot flash
+    $("flash").style.opacity = t > 5.0 && t < 5.45 ? 0.9 * (1 - seg(t, 5.05, 5.45)) : 0;
+
+    // ---- Wingmate panel slides up
+    const lab = outCubic(seg(t, 5.1, 5.7)), labOut = outCubic(seg(t, 13.6, 14.1));
+    $("lab").style.transform = `translateY(${(1 - lab) * 1000 + labOut * 1000}px)`;
+    show($("lab"), t > 5.1 && t < 14.2);
+    $("scan").style.top = `${(Math.sin((t - 5.6) * 4) * 0.5 + 0.5) * 214}px`;
+    $("scan").style.opacity = t > 5.6 && t < 7.4 ? 1 : 0;
+    const rp = seg(t, 7.2, 9.4);
+    // type the read, keeping the <b> emphasis once its text is reached
+    const n = Math.round(READ_PLAIN.length * rp);
+    let out = "", count = 0, inTag = false;
+    for (const ch of READ) {
+      if (ch === "<") inTag = true;
+      if (inTag) { out += ch; if (ch === ">") inTag = false; continue; }
+      if (count++ >= n) break;
+      out += ch;
+    }
+    $("read").innerHTML = rp > 0 ? out + (inTag ? "" : "</b>") : "";
+    ["c1", "c2", "c3"].forEach((id, i) => {
+      const p = outBack(seg(t, 9.6 + i * 0.55, 10.0 + i * 0.55));
+      const el = $(id);
+      el.style.opacity = clamp(seg(t, 9.6 + i * 0.55, 9.8 + i * 0.55));
+      el.style.transform = `translateY(${(1 - p) * 60}px) scale(${id === "c3" && t > 12.5 ? 1.04 : 1})`;
+      el.style.outline = id === "c3" && t > 12.5 ? "6px solid #FF4F7B" : "none";
+      el.style.filter = id !== "c3" && t > 12.5 ? "brightness(.55)" : "none";
+    });
+    // tap on BOLD
+    const tap = seg(t, 12.3, 12.9);
+    const c3 = $("c3");
+    $("tap").style.left = `${c3.offsetLeft + c3.offsetWidth - 170}px`;
+    $("tap").style.top = `${c3.offsetTop + c3.offsetHeight / 2 - 60}px`;
+    $("tap").style.opacity = tap > 0 && tap < 1 ? 1 - tap : 0;
+    $("tap").style.transform = `scale(${0.4 + tap * 0.9})`;
+
+    // ---- back in the chat: bold reply sent, they answer
+    const sent = t > 14.0;
+    $("itext").style.display = sent ? "none" : "";
+    if (sent) $("input").firstElementChild.style.display = "none";
+    show($("sent"), sent);
+    $("sent").textContent = "wide awake and a little bored. fix that thursday?";
+    $("sent").style.transform = `translateY(${(1 - outBack(seg(t, 14.0, 14.4))) * 80}px)`;
+    show($("readr"), t > 14.9);
+    show($("dots"), t > 15.2 && t < 16.4);
+    $("dots").querySelectorAll("i").forEach((d, i) => (d.style.opacity = 0.35 + 0.65 * (Math.sin(t * 9 - i) * 0.5 + 0.5)));
+    show($("answer"), t >= 16.4);
+    $("answer").style.transform = `scale(${0.6 + 0.4 * outBack(seg(t, 16.4, 16.8))})`;
+    $("answer").style.transformOrigin = "0% 100%";
+
+    // ---- end card
+    const e = seg(t, 17.6, 18.0);
+    $("end").style.opacity = e;
+    $("end").style.transform = `scale(${1.08 - 0.08 * outCubic(e)})`;
+    show($("end"), t >= 17.6);
+  };
+  window.render(0);
+</script>
+</body>
+</html>
