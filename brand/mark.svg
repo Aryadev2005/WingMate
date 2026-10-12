@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Speech bubble with one sharp corner (the "tail"), holding a three-feather wing -->
+  <path d="M8 92 L8 50 A42 42 0 0 1 50 8 A42 42 0 0 1 92 50 A42 42 0 0 1 50 92 Z" fill="#FF4F7B"/>
+  <g fill="#FFFFFF" stroke="#FF4F7B" stroke-width="1.8" stroke-linejoin="round" transform="translate(-3 -8) scale(1.1)">
+    <path d="M29 67 C35 43 54 30 74 28 C68 41 56 55 29 67 Z"/>
+    <path d="M29 67 C40 53 57 44 76 44 C67 55 52 63 29 67 Z"/>
+    <path d="M29 67 C42 60 56 58 71 59 C62 67 48 70 29 67 Z"/>
+  </g>
+</svg>
