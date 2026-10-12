@@ -10,7 +10,6 @@ const Id = z.object({ id: z.string().uuid() });
 
 export async function chatRoutes(app: FastifyInstance) {
   const { cfg, db, redis, llm } = app.deps;
-  const costMicros = (pt: number, ct: number) => Math.round(pt * cfg.LLM_PRICE_IN_PER_M + ct * cfg.LLM_PRICE_OUT_PER_M);
 
   app.get("/v1/conversations", { onRequest: app.auth }, async (req) => {
     const { before } = z.object({ before: z.string().datetime().optional() }).parse(req.query);
@@ -144,7 +143,7 @@ export async function chatRoutes(app: FastifyInstance) {
         const a = await db.query<{ id: string }>(
           `INSERT INTO messages(conversation_id,role,content,safety,model,prompt_tokens,completion_tokens,cost_micros)
            VALUES ($1,'assistant',$2,$3,$4,$5,$6,$7) RETURNING id`,
-          [id, text, safety, result.model, result.usage.promptTokens, result.usage.completionTokens, costMicros(result.usage.promptTokens, result.usage.completionTokens)],
+          [id, text, safety, result.model, result.usage.promptTokens, result.usage.completionTokens, result.costMicros],
         );
         await db.query(
           `UPDATE conversations SET message_count=message_count+2, updated_at=now(),

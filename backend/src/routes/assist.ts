@@ -113,7 +113,7 @@ export async function assistRoutes(app: FastifyInstance) {
       const { promptTokens: pt, completionTokens: ct } = res.usage;
       await db.query(
         "INSERT INTO assist_events(user_id,mode,with_image,model,prompt_tokens,completion_tokens,cost_micros) VALUES ($1,$2,$3,$4,$5,$6,$7)",
-        [uid, body.mode, !!imageUrl, res.model, pt, ct, Math.round(pt * cfg.LLM_PRICE_IN_PER_M + ct * cfg.LLM_PRICE_OUT_PER_M)],
+        [uid, body.mode, !!imageUrl, res.model, pt, ct, res.costMicros],
       );
       return {
         suggestions: out.suggestions.slice(0, 3),

@@ -48,6 +48,8 @@ export async function setup(extra: Record<string, string> = {}) {
     LLM_BASE_URL: primary.url,
     LLM_API_KEY: "test",
     LLM_MODEL: "primary-model",
+    LLM_VISION_BASE_URL: primary.url,
+    LLM_VISION_API_KEY: "test",
     LLM_VISION_MODEL: "vision-model",
     LLM_FALLBACK_BASE_URL: fallback.url,
     LLM_FALLBACK_MODEL: "fallback-model",

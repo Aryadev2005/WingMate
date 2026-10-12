@@ -6,7 +6,7 @@ import { Redis } from "ioredis";
 import { z } from "zod";
 import type { Config } from "./config.js";
 import type { Db } from "./db.js";
-import { LlmClient } from "./llm/provider.js";
+import { LlmClient, type Provider } from "./llm/provider.js";
 import { hit, usedToday } from "./services/limits.js";
 import { helplinesFor } from "./services/safety.js";
 import { chatRoutes } from "./routes/chat.js";
@@ -201,12 +201,16 @@ export async function buildApp(deps: Deps): Promise<FastifyInstance> {
 
 export function makeDeps(cfg: Config, db: Db): Deps {
   const redis = new Redis(cfg.REDIS_URL, { maxRetriesPerRequest: 2, enableOfflineQueue: true });
-  const providers = [{ baseUrl: cfg.LLM_BASE_URL, apiKey: cfg.LLM_API_KEY, model: cfg.LLM_MODEL }];
-  if (cfg.LLM_FALLBACK_BASE_URL && cfg.LLM_FALLBACK_MODEL) {
-    providers.push({ baseUrl: cfg.LLM_FALLBACK_BASE_URL, apiKey: cfg.LLM_FALLBACK_API_KEY, model: cfg.LLM_FALLBACK_MODEL });
-  }
-  const vision = cfg.LLM_VISION_MODEL
-    ? [{ baseUrl: cfg.LLM_VISION_BASE_URL || cfg.LLM_BASE_URL, apiKey: cfg.LLM_VISION_API_KEY || cfg.LLM_API_KEY, model: cfg.LLM_VISION_MODEL }, ...providers.slice(1)]
+  const providers: Provider[] = [
+    { baseUrl: cfg.LLM_BASE_URL, apiKey: cfg.LLM_API_KEY, model: cfg.LLM_MODEL, priceIn: cfg.LLM_PRICE_IN_PER_M, priceOut: cfg.LLM_PRICE_OUT_PER_M },
+  ];
+  const fallback: Provider[] = cfg.LLM_FALLBACK_BASE_URL && cfg.LLM_FALLBACK_MODEL
+    ? [{ baseUrl: cfg.LLM_FALLBACK_BASE_URL, apiKey: cfg.LLM_FALLBACK_API_KEY, model: cfg.LLM_FALLBACK_MODEL, priceIn: cfg.LLM_FALLBACK_PRICE_IN_PER_M, priceOut: cfg.LLM_FALLBACK_PRICE_OUT_PER_M }]
+    : [];
+  providers.push(...fallback);
+  // Screenshots go to the vision model (Gemini 2.5 Flash-Lite by default), then the fallback if one is set.
+  const vision: Provider[] = cfg.LLM_VISION_API_KEY
+    ? [{ baseUrl: cfg.LLM_VISION_BASE_URL, apiKey: cfg.LLM_VISION_API_KEY, model: cfg.LLM_VISION_MODEL, priceIn: cfg.LLM_VISION_PRICE_IN_PER_M, priceOut: cfg.LLM_VISION_PRICE_OUT_PER_M }, ...fallback]
     : providers;
   return {
     cfg, db, redis,

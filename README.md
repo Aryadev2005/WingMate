@@ -46,7 +46,7 @@ Fixes for what users complain about in those apps' App Store reviews:
 | Keyboard extension gets stuck or grows | No keyboard extension. Copy-to-clipboard instead. |
 | Subscription required up front | Shares the free daily allowance with chat. |
 
-Screenshots are shrunk on the phone before upload (cheaper vision tokens, faster), sent to the vision model, and never stored. Only cost and mode are logged (`assist_events`).
+Screenshots are read by **Gemini 2.5 Flash-Lite** ($0.10 / $0.40 per 1M tokens) through Gemini's OpenAI-compatible endpoint. Set `LLM_VISION_API_KEY` (from Google AI Studio) and it works; the model and endpoint are already the defaults. Screenshots are shrunk to 900px on the phone first, so a screenshot reply costs roughly $0.0003. They're never stored; only cost and mode are logged (`assist_events`), priced at the vision model's own rate.
 
 ## Backend
 
@@ -73,7 +73,7 @@ Screenshots are shrunk on the phone before upload (cheaper vision tokens, faster
 
 ### Cheap LLM, healthy margin
 
-No Claude or OpenAI key required. Point `LLM_BASE_URL` at any OpenAI-compatible provider (OpenRouter, DeepSeek, Gemini's OpenAI endpoint, Groq, Together) and pick a cheap model. Reply Lab screenshots need an image-capable model: set `LLM_VISION_MODEL` if your main model is text-only. A second provider can be set as automatic fallback.
+No Claude or OpenAI key required. Point `LLM_BASE_URL` at any OpenAI-compatible provider (OpenRouter, DeepSeek, Gemini's OpenAI endpoint, Groq, Together) and pick a cheap model. Reply Lab screenshots use a separate image-capable model (Gemini 2.5 Flash-Lite by default). A second provider can be set as automatic fallback.
 
 Token savings built in:
 - Short system prompt; only the last 8 messages are sent.
@@ -114,7 +114,7 @@ docker compose -f ../docker-compose.yml up --build
 # or without Docker: npm install && npm run dev
 ```
 
-Tests (27 integration tests against real Postgres + Redis, fake LLM):
+Tests (28 integration tests against real Postgres + Redis, fake LLM):
 
 ```bash
 cd backend && npm test

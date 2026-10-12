@@ -48,6 +48,16 @@ describe("reply lab", () => {
     expect(call.model).toBe("vision-model");
     expect(call.messages[1].content[0].type).toBe("image_url");
     expect(call.messages[1].content[0].image_url.url).toMatch(/^data:image\/png;base64,/);
+    // Cost is logged at the vision model's price ($0.10 / $0.40 per 1M), not the chat model's.
+    const ev = await t.deps.db.query("SELECT cost_micros FROM assist_events WHERE user_id=$1", [u.id]);
+    expect(ev.rows[0].cost_micros).toBe(Math.round(120 * 0.1 + 30 * 0.4));
+  });
+
+  it("defaults screenshots to Gemini 2.5 Flash-Lite on Gemini's OpenAI endpoint", async () => {
+    const { loadConfig } = await import("../src/config.js");
+    const c = loadConfig({});
+    expect(c.LLM_VISION_MODEL).toBe("gemini-2.5-flash-lite");
+    expect(c.LLM_VISION_BASE_URL).toBe("https://generativelanguage.googleapis.com/v1beta/openai");
   });
 
   it("asks for new suggestions on 'More' and returns bio feedback", async () => {

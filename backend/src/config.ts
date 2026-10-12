@@ -24,10 +24,15 @@ const schema = z.object({
   LLM_FALLBACK_BASE_URL: z.string().default(""),
   LLM_FALLBACK_API_KEY: z.string().default(""),
   LLM_FALLBACK_MODEL: z.string().default(""),
-  // Model used for screenshots. Must accept images. Defaults to the primary provider/model.
-  LLM_VISION_BASE_URL: z.string().default(""),
+  LLM_FALLBACK_PRICE_IN_PER_M: num(0.3),
+  LLM_FALLBACK_PRICE_OUT_PER_M: num(1.0),
+  // Reply Lab screenshots: Gemini 2.5 Flash-Lite through Gemini's OpenAI-compatible endpoint.
+  // Get a key at https://aistudio.google.com/apikey. Without a key, screenshot requests fail cleanly (and aren't charged).
+  LLM_VISION_BASE_URL: z.string().default("https://generativelanguage.googleapis.com/v1beta/openai"),
   LLM_VISION_API_KEY: z.string().default(""),
-  LLM_VISION_MODEL: z.string().default(""),
+  LLM_VISION_MODEL: z.string().default("gemini-2.5-flash-lite"),
+  LLM_VISION_PRICE_IN_PER_M: num(0.1),
+  LLM_VISION_PRICE_OUT_PER_M: num(0.4),
   MAX_IMAGE_BYTES: num(1_500_000),
   LLM_FIRST_TOKEN_TIMEOUT_MS: num(20000),
   LLM_TOTAL_TIMEOUT_MS: num(60000),
@@ -52,6 +57,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
   if (c.NODE_ENV === "production") {
     if (c.JWT_SECRET.startsWith("dev-only")) throw new Error("Set JWT_SECRET in production");
     if (!c.LLM_API_KEY) throw new Error("Set LLM_API_KEY in production");
+    if (!c.LLM_VISION_API_KEY) console.warn("LLM_VISION_API_KEY is not set: Reply Lab screenshots will fail until it is.");
   }
   return c;
 }

@@ -5,9 +5,10 @@
 export type ContentPart = { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } };
 export type ChatMessage = { role: "system" | "user" | "assistant"; content: string | ContentPart[] };
 const textOf = (c: ChatMessage["content"]) => (typeof c === "string" ? c : c.map((p) => (p.type === "text" ? p.text : "x".repeat(4000))).join(""));
-export type Provider = { baseUrl: string; apiKey: string; model: string };
+/** priceIn/priceOut are USD per 1M tokens, so every reply's cost is logged at the rate of the model that answered. */
+export type Provider = { baseUrl: string; apiKey: string; model: string; priceIn: number; priceOut: number };
 export type Usage = { promptTokens: number; completionTokens: number };
-export type ChatResult = { text: string; usage: Usage; model: string };
+export type ChatResult = { text: string; usage: Usage; model: string; costMicros: number };
 
 export class LlmError extends Error {
   constructor(message: string, readonly status?: number, readonly streamed = false) {
@@ -75,11 +76,8 @@ async function streamOnce(
     }
     if (!text) throw new LlmError("Empty completion");
     if (!finished) throw new LlmError("Stream cut off", undefined, true);
-    return {
-      text,
-      model: p.model,
-      usage: usage ?? { promptTokens: estimate(messages.map((m) => textOf(m.content)).join("")), completionTokens: estimate(text) },
-    };
+    const u = usage ?? { promptTokens: estimate(messages.map((m) => textOf(m.content)).join("")), completionTokens: estimate(text) };
+    return { text, model: p.model, usage: u, costMicros: Math.round(u.promptTokens * p.priceIn + u.completionTokens * p.priceOut) };
   } catch (e) {
     if (e instanceof LlmError) throw new LlmError(e.message, e.status, text.length > 0);
     if (opts.signal?.aborted) throw new LlmError("cancelled", 499, text.length > 0);
