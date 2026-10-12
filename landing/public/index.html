@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wingmate — know what to text back</title>
+<meta name="description" content="Screenshot the chat. Wingmate tells you what they meant and gives you three replies worth sending. Early access is open.">
+<meta property="og:title" content="Wingmate — know what to text back">
+<meta property="og:description" content="Screenshot the chat. Get the read. Get three replies worth sending. Founding price for the first 500.">
+<meta property="og:image" content="/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0E0A16">
+<link rel="icon" href="/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Schibsted+Grotesk:wght@400;500;600;700&family=Gochi+Hand&display=swap" rel="stylesheet">
+<style>
+/* One deliberate world: 1am, phone brightness on low. Single dark theme on purpose. */
+:root{
+  --night:#0E0A16; --night-2:#16101F; --night-3:#1F1830; --line:#2C2440;
+  --ink:#F4EFFA; --muted:#A39BB8; --dim:#6F6787;
+  --rose:#FF4F7B; --rose-ink:#fff; --butter:#FFE9A8; --butter-ink:#3A2C00; --them:#2A2238;
+  --display:"Familjen Grotesk","Helvetica Neue",Arial,sans-serif;
+  --body:"Schibsted Grotesk","Helvetica Neue",Arial,sans-serif;
+  --hand:"Gochi Hand","Comic Sans MS",cursive;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--night);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--rose);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px}
+h1,h2,h3{font-family:var(--display);font-weight:700;letter-spacing:-.025em;line-height:1.02;margin:0;text-wrap:balance}
+.hand{font-family:var(--hand);color:var(--butter);font-size:22px;line-height:1.2;transform:rotate(-2deg);display:inline-block}
+.muted{color:var(--muted)}
+.tiny{font-size:13px;color:var(--dim)}
+
+/* nav */
+nav{position:sticky;top:0;z-index:20;background:rgba(14,10,22,.86);backdrop-filter:blur(10px);border-bottom:1px solid transparent;transition:border-color .2s}
+nav.scrolled{border-color:var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:-.02em;text-decoration:none}
+.logo svg{width:28px;height:28px}
+.navcta{font-weight:600;font-size:15px;text-decoration:none;padding:9px 16px;border-radius:999px;background:var(--ink);color:var(--night)}
+
+/* hero */
+.hero{padding-block:56px 40px}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:56px;align-items:center}
+.hero h1{font-size:clamp(46px,7vw,86px);margin-top:14px}
+.hero h1 .strike{color:var(--dim);text-decoration:line-through;text-decoration-color:var(--rose);text-decoration-thickness:.09em}
+.lede{font-size:20px;max-width:34ch;color:var(--muted);margin:22px 0 28px}
+.lede b{color:var(--ink);font-weight:600}
+
+/* forms */
+.join{display:flex;gap:8px;max-width:480px;flex-wrap:wrap}
+.join input[type=email]{flex:1 1 220px;min-width:0;padding:16px 18px;border-radius:14px;border:1.5px solid var(--line);background:var(--night-2);color:var(--ink);font:inherit;font-size:17px}
+.join input[type=email]:focus{border-color:var(--rose);outline:none}
+.btn{padding:16px 22px;border-radius:14px;border:0;background:var(--rose);color:var(--rose-ink);font:inherit;font-weight:700;font-size:17px;cursor:pointer;white-space:nowrap;transition:transform .12s}
+.btn:hover{transform:translateY(-1px)}
+.btn:disabled{opacity:.6;cursor:wait;transform:none}
+.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+.hp{position:absolute;left:-9999px}
+.formnote{margin-top:12px;font-size:14px;color:var(--dim)}
+.formerr{margin-top:10px;color:var(--rose);font-size:15px;min-height:1em}
+.count{margin-top:18px;display:flex;align-items:center;gap:10px;font-size:15px;color:var(--muted)}
+.count i{width:8px;height:8px;border-radius:50%;background:#3DDC84;box-shadow:0 0 0 4px rgba(61,220,132,.15)}
+
+/* phone */
+.phone{position:relative;width:min(360px,100%);margin-inline:auto;aspect-ratio:9/17.5;border-radius:44px;background:var(--night-2);border:2px solid var(--line);box-shadow:0 40px 100px -30px rgba(255,79,123,.35);overflow:hidden}
+.ph-head{display:flex;align-items:center;gap:12px;padding:22px 20px 14px;border-bottom:1px solid var(--line)}
+.ph-ava{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7E6BFF,#FF7FA8);display:grid;place-items:center;font-weight:700;font-size:16px}
+.ph-who{font-weight:600;font-size:15px;line-height:1.2}.ph-who small{display:block;color:var(--dim);font-weight:500;font-size:12px}
+.ph-chat{position:absolute;inset:72px 0 64px;padding:14px;display:flex;flex-direction:column;justify-content:flex-end;gap:7px;overflow:hidden}
+.bub{max-width:80%;padding:9px 13px;border-radius:19px;font-size:14.5px;line-height:1.3;animation:pop .28s cubic-bezier(.2,1.4,.4,1) both}
+.bub.them{align-self:flex-start;background:var(--them);border-bottom-left-radius:6px}
+.bub.you{align-self:flex-end;background:var(--rose);color:#fff;border-bottom-right-radius:6px}
+.stamp-time{align-self:center;font-size:11px;color:var(--dim);margin:4px 0}
+.read{align-self:flex-end;font-size:11px;color:var(--dim)}
+.ph-input{position:absolute;left:12px;right:12px;bottom:14px;height:40px;border-radius:20px;border:1.5px solid var(--line);padding:0 14px;display:flex;align-items:center;font-size:14.5px;color:var(--ink)}
+.ph-input .ph{color:var(--dim)}
+.ph-input.bad{text-decoration:line-through;text-decoration-color:#FF3B3B;text-decoration-thickness:2px;color:var(--muted)}
+.dont{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) rotate(-5deg);background:#FF2D55;color:#fff;font-family:var(--display);font-weight:700;font-size:40px;line-height:.92;padding:12px 18px 14px;border-radius:12px;text-align:center;box-shadow:0 0 50px rgba(255,45,85,.6);animation:slam .32s cubic-bezier(.2,1.6,.4,1) both;z-index:3}
+.lab{position:absolute;left:0;right:0;bottom:0;top:62px;background:#17112A;border-top:2px solid var(--rose);border-radius:28px 28px 0 0;padding:16px 14px;display:flex;flex-direction:column;gap:9px;animation:up .45s cubic-bezier(.2,.9,.3,1) both;z-index:2}
+.lab-h{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px}.lab-h svg{width:18px;height:18px}
+.lab-h small{margin-left:auto;font-size:10px;letter-spacing:.12em;color:var(--rose);font-weight:700}
+.lab-read{font-size:13.5px;line-height:1.35;color:var(--ink)}.lab-read b{color:var(--rose)}
+.opt{background:var(--butter);color:var(--butter-ink);border-radius:14px;padding:9px 12px;animation:pop .3s cubic-bezier(.2,1.4,.4,1) both}
+.opt span{display:block;font-size:9.5px;font-weight:800;letter-spacing:.12em}.opt p{margin:2px 0 0;font-size:13.5px;font-weight:600;line-height:1.25}
+.opt.pick{outline:3px solid var(--rose)}
+.opt.dimmed{filter:brightness(.55)}
+.dots{align-self:flex-start;background:var(--them);border-radius:19px;padding:12px 14px;display:flex;gap:4px}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:blink 1s infinite}
+.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+.phone-note{position:absolute;right:-6px;top:-34px}
+@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes slam{from{opacity:0;transform:translate(-50%,-50%) rotate(-5deg) scale(2.2)}to{opacity:1}}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+@keyframes blink{50%{opacity:.3}}
+
+/* apps strip */
+.apps{border-block:1px solid var(--line);padding-block:18px;margin-top:24px}
+.apps .wrap{display:flex;flex-wrap:wrap;gap:8px 26px;align-items:center;justify-content:center;color:var(--dim);font-weight:600;font-size:15px}
+.apps .wrap span:first-child{color:var(--muted);font-weight:500}
+
+section{padding-block:96px}
+.kicker{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--rose)}
+.sec-h{font-size:clamp(36px,5vw,58px);margin-top:12px}
+.sec-sub{color:var(--muted);font-size:19px;max-width:52ch;margin-top:14px}
+
+/* audit */
+.audit{background:var(--night-2);border-block:1px solid var(--line)}
+.audit-card{margin-top:40px;display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:32px;align-items:start}
+.scenario{background:var(--night);border:1px solid var(--line);border-radius:24px;padding:22px}
+.sc-meta{display:flex;justify-content:space-between;font-size:13px;color:var(--dim);margin-bottom:14px}
+.sc-ctx{font-size:15px;color:var(--muted);margin-bottom:14px}
+.sc-thread{display:flex;flex-direction:column;gap:7px}
+.choices{display:grid;gap:10px}
+.choice{text-align:left;padding:15px 18px;border-radius:16px;border:1.5px solid var(--line);background:transparent;color:var(--ink);font:inherit;font-size:16px;cursor:pointer;transition:border-color .15s,background .15s}
+.choice:hover:not(:disabled){border-color:var(--muted)}
+.choice:disabled{cursor:default}
+.choice.right{border-color:#3DDC84;background:rgba(61,220,132,.08)}
+.choice.wrong{border-color:#FF3B3B;background:rgba(255,59,59,.06)}
+.verdict{margin-top:14px;padding:16px 18px;border-radius:16px;background:var(--night-3);font-size:16px}
+.verdict b{font-family:var(--display);font-size:19px;display:block;margin-bottom:4px}
+.audit-nav{margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.progress{display:flex;gap:6px}.progress i{width:28px;height:4px;border-radius:2px;background:var(--line)}.progress i.on{background:var(--rose)}
+.result{text-align:center;padding:28px 10px}
+.result .score{font-family:var(--display);font-size:96px;font-weight:700;line-height:1;letter-spacing:-.04em}
+.result .score small{font-size:40px;color:var(--dim)}
+
+/* how */
+.steps{margin-top:48px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.step{border:1px solid var(--line);border-radius:24px;padding:22px;display:flex;flex-direction:column;gap:16px;background:var(--night-2)}
+.step .n{font-family:var(--display);font-weight:700;color:var(--rose);font-size:15px}
+.step h3{font-size:24px}
+.step p{margin:0;color:var(--muted);font-size:16px}
+.mock{background:var(--night);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:7px;min-height:150px;justify-content:center}
+.shot{border:1.5px dashed var(--line);border-radius:14px;padding:16px;text-align:center;color:var(--muted);font-size:14px}
+
+.more{margin-top:20px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+.more div{border-top:2px solid var(--line);padding-top:14px}
+.more h3{font-size:19px;margin-bottom:6px}
+.more p{margin:0;color:var(--muted);font-size:15px}
+
+/* founding */
+.founding .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center}
+.prices{display:grid;gap:14px}
+.price{border-radius:24px;padding:26px;border:1.5px solid var(--line);position:relative}
+.price.hot{border:2px solid var(--rose);background:linear-gradient(180deg,rgba(255,79,123,.08),transparent)}
+.price .tag{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.price.hot .tag{color:var(--rose)}
+.price .amt{font-family:var(--display);font-weight:700;font-size:56px;letter-spacing:-.03em;line-height:1;margin:10px 0 6px;font-variant-numeric:tabular-nums}
+.price .amt small{font-size:20px;color:var(--muted);font-weight:500;letter-spacing:0}
+.price ul{margin:14px 0 0;padding:0;list-style:none;display:grid;gap:8px;color:var(--muted);font-size:15.5px}
+.price ul li::before{content:"✓  ";color:var(--rose);font-weight:700}
+.price.calm .amt{color:var(--muted)}
+.meter{margin-top:22px}
+.bar{height:10px;border-radius:5px;background:var(--night-3);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--rose);border-radius:5px;width:0;transition:width 1s}
+.meter p{margin:8px 0 0;font-size:15px;color:var(--muted)}
+.price .hand{position:absolute;right:18px;top:-18px;font-size:20px}
+
+/* faq */
+.faq{max-width:760px}
+details{border-bottom:1px solid var(--line);padding-block:20px}
+summary{cursor:pointer;font-family:var(--display);font-weight:700;font-size:21px;list-style:none;display:flex;justify-content:space-between;gap:16px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--rose);font-size:26px;line-height:1}
+details[open] summary::after{content:"–"}
+details p{color:var(--muted);margin:12px 0 0;max-width:62ch}
+
+/* final cta */
+.final{text-align:center}
+.final h2{font-size:clamp(40px,6vw,72px)}
+.final .join{margin:32px auto 0;justify-content:center}
+
+footer{border-top:1px solid var(--line);padding-block:32px 48px}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--dim)}
+footer a{color:var(--muted)}
+
+/* success sheet */
+.sheet{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;background:rgba(8,5,14,.82);backdrop-filter:blur(6px)}
+.ticket{width:min(420px,100%);background:var(--night-2);border:1px solid var(--line);border-radius:28px;padding:26px;position:relative;animation:pop .35s cubic-bezier(.2,1.3,.4,1) both}
+.ticket .close{position:absolute;right:14px;top:12px;background:none;border:0;color:var(--muted);font-size:26px;cursor:pointer;line-height:1;padding:6px}
+.pass{border-radius:20px;padding:22px;background:linear-gradient(140deg,#FF4F7B 0%,#B03A8C 100%);color:#fff;position:relative;overflow:hidden}
+.pass::after{content:"";position:absolute;right:-40px;bottom:-40px;width:160px;height:160px;border-radius:50% 50% 50% 18%;background:rgba(255,255,255,.12)}
+.pass .ptag{font-size:11px;font-weight:800;letter-spacing:.16em;opacity:.9}
+.pass .pnum{font-family:var(--display);font-weight:700;font-size:64px;line-height:1;letter-spacing:-.03em;margin:8px 0 2px;font-variant-numeric:tabular-nums}
+.pass .plogo{display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:700;font-size:18px;margin-top:14px}
+.pass .plogo svg{width:20px;height:20px}
+.share{margin-top:18px}
+.share p{margin:0 0 10px;font-size:15.5px}
+.linkbox{display:flex;gap:8px}
+.linkbox input{flex:1;min-width:0;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--night);color:var(--ink);font:inherit;font-size:14px}
+.linkbox .btn{padding:12px 16px;font-size:15px}
+.sharerow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.sharerow a{flex:1;text-align:center;text-decoration:none;padding:11px;border-radius:12px;border:1.5px solid var(--line);font-weight:600;font-size:14px}
+
+@media (max-width:880px){
+  .hero .wrap,.audit-card,.founding .wrap{grid-template-columns:minmax(0,1fr)}
+  .hero{padding-top:32px}
+  .phone{width:min(320px,100%)}
+  .steps{grid-template-columns:1fr}
+  .more{grid-template-columns:repeat(2,minmax(0,1fr))}
+  section{padding-block:72px}
+  .phone-note{display:none}
+}
+@media (max-width:520px){ .more{grid-template-columns:1fr} .btn{width:100%} }
+@media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="mark" viewBox="0 0 100 100"><path d="M8 92 L8 50 A42 42 0 0 1 50 8 A42 42 0 0 1 92 50 A42 42 0 0 1 50 92 Z" fill="#FF4F7B"/><g fill="#fff" stroke="#FF4F7B" stroke-width="1.8" stroke-linejoin="round" transform="translate(-3 -8) scale(1.1)"><path d="M29 67 C35 43 54 30 74 28 C68 41 56 55 29 67 Z"/><path d="M29 67 C40 53 57 44 76 44 C67 55 52 63 29 67 Z"/><path d="M29 67 C42 60 56 58 71 59 C62 67 48 70 29 67 Z"/></g></symbol>
+</svg>
+
+<nav id="nav"><div class="wrap">
+  <a class="logo" href="#top"><svg><use href="#mark"/></svg>wingmate</a>
+  <a class="navcta" href="#founding">get early access</a>
+</div></nav>
+
+<header class="hero" id="top"><div class="wrap">
+  <div>
+    <span class="hand">for anyone who's stared at "wyd" for 20 minutes</span>
+    <h1>stop sending <span class="strike">"nothing much hbu"</span></h1>
+    <p class="lede">screenshot the chat. wingmate tells you <b>what they actually meant</b>, and gives you <b>three replies worth sending</b>. even at 1:47am.</p>
+    <form class="join" data-intent="waitlist" data-source="hero" novalidate>
+      <label class="hp">website <input name="website" tabindex="-1" autocomplete="off"></label>
+      <input type="email" name="email" placeholder="you@email.com" autocomplete="email" required aria-label="Email address">
+      <button class="btn" type="submit">get early access</button>
+    </form>
+    <p class="formerr" role="alert"></p>
+    <p class="formnote">free to join · one email when it launches · 18+</p>
+    <div class="count" id="count" hidden><i></i><span></span></div>
+  </div>
+  <div style="position:relative">
+    <span class="hand phone-note">yes this happens every weekend</span>
+    <div class="phone" id="phone" aria-label="Demo: Wingmate turning a boring reply into a good one">
+      <div class="ph-head"><div class="ph-ava">J</div><div class="ph-who">Jordan<small>active now</small></div></div>
+      <div class="ph-chat" id="phChat"></div>
+      <div class="ph-input" id="phInput"><span class="ph">Message…</span></div>
+    </div>
+  </div>
+</div></header>
+
+<div class="apps"><div class="wrap"><span>works on any chat you can screenshot:</span><span>Hinge</span><span>Tinder</span><span>Bumble</span><span>Instagram DMs</span><span>WhatsApp</span><span>iMessage</span></div></div>
+
+<section class="audit" id="audit"><div class="wrap">
+  <div class="kicker">the 1am text audit</div>
+  <h2 class="sec-h">3 texts. pick what you'd actually send.</h2>
+  <p class="sec-sub">no judgement. okay, a little judgement. this is the kind of read wingmate gives you on every chat.</p>
+  <div class="audit-card" id="auditCard"></div>
+</div></section>
+
+<section id="how"><div class="wrap">
+  <div class="kicker">how it works</div>
+  <h2 class="sec-h">screenshot. read. send.</h2>
+  <div class="steps">
+    <div class="step"><span class="n">01</span><div class="mock"><div class="shot">📸 drop a screenshot<br><span class="tiny">or paste the messages</span></div></div><h3>screenshot the chat</h3><p>any app. their profile works too, if you're trying to send the first message.</p></div>
+    <div class="step"><span class="n">02</span><div class="mock"><div class="bub them" style="animation:none">i'm just really busy rn</div><div class="lab-read" style="padding:4px 2px">probably genuinely busy, <b>not a no.</b> don't chase. leave a door open.</div></div><h3>get the honest read</h3><p>what they probably meant, and what to avoid. it'll tell you when you're the problem, too.</p></div>
+    <div class="step"><span class="n">03</span><div class="mock"><div class="opt" style="animation:none"><span>CHILL</span><p>totally get it. i'm around thursday if things calm down</p></div><div class="opt" style="animation:none;opacity:.6"><span>FUNNY</span><p>respect the hustle. i'll be here, being unbusy</p></div></div><h3>pick a reply. send it.</h3><p>three options in your vibe: chill, flirty, funny, or bold. tap to copy.</p></div>
+  </div>
+  <div class="more">
+    <div><h3>opening lines</h3><p>screenshot their profile, get a first message that isn't "hey".</p></div>
+    <div><h3>bio fix</h3><p>honest feedback on your profile and three rewrites.</p></div>
+    <div><h3>talk it through</h3><p>a coach that remembers your situation. breakups included.</p></div>
+    <div><h3>private by default</h3><p>no phone number. screenshots are never stored. delete everything in one tap.</p></div>
+  </div>
+</div></section>
+
+<section class="founding" id="founding"><div class="wrap">
+  <div>
+    <div class="kicker">founding members</div>
+    <h2 class="sec-h">the first 500 get it for half.</h2>
+    <p class="sec-sub">reserve now and your first 3 months are $4.99/mo instead of $9.99. you pay nothing today. we'll email you when the app is live, with your price locked in.</p>
+    <div class="meter" id="meter"><div class="bar"><i id="barFill"></i></div><p id="meterText">500 founding spots. that's it.</p></div>
+    <form class="join" data-intent="founding" data-source="founding" novalidate style="margin-top:26px">
+      <label class="hp">website <input name="website" tabindex="-1" autocomplete="off"></label>
+      <input type="email" name="email" placeholder="you@email.com" autocomplete="email" required aria-label="Email address">
+      <button class="btn" type="submit">reserve my founding price</button>
+    </form>
+    <p class="formerr" role="alert"></p>
+    <p class="formnote">no card, no payment now. cancel anytime after launch.</p>
+  </div>
+  <div class="prices">
+    <div class="price hot"><span class="hand">only until 500</span><div class="tag">founding member</div><div class="amt">$4.99<small> /mo for 3 months</small></div><div class="muted">then $9.99/mo</div><ul><li>everything in wingmate</li><li>first in line at launch</li><li>price locked when you reserve</li></ul></div>
+    <div class="price calm"><div class="tag muted">after launch</div><div class="amt">$9.99<small> /mo</small></div><div class="tiny">or try free: a few messages a day, forever.</div></div>
+  </div>
+</div></section>
+
+<section id="faq"><div class="wrap faq">
+  <div class="kicker">questions</div>
+  <h2 class="sec-h" style="margin-bottom:24px">the honest answers.</h2>
+  <details><summary>is this a dating app?</summary><p>no. you won't meet anyone on wingmate. it's for the conversations you're already having, on whatever app you use.</p></details>
+  <details><summary>does it just tell me what i want to hear?</summary><p>no. you pick the tone (gentle, straight-up or funny), but the advice is honest either way. sometimes the honest answer is "don't text them."</p></details>
+  <details><summary>what happens to my screenshots?</summary><p>they're used to write your suggestions and never stored. no phone number needed to sign up, your chats are never sold, and you can delete your account and everything in it in one tap.</p></details>
+  <details><summary>when does it launch?</summary><p>soon. founding members and the first people on the list get in first. you'll get one email with your invite.</p></details>
+  <details><summary>is there a free version?</summary><p>yes, a few messages every day, forever. the founding price is for people who want it without limits.</p></details>
+  <details><summary>who's it for?</summary><p>anyone 18+ who's ever typed, deleted and retyped the same text four times.</p></details>
+</div></section>
+
+<section class="final"><div class="wrap">
+  <h2>next time they text "wyd",<br>you'll know what to say.</h2>
+  <form class="join" data-intent="waitlist" data-source="footer" novalidate>
+    <label class="hp">website <input name="website" tabindex="-1" autocomplete="off"></label>
+    <input type="email" name="email" placeholder="you@email.com" autocomplete="email" required aria-label="Email address">
+    <button class="btn" type="submit">get early access</button>
+  </form>
+  <p class="formerr" role="alert"></p>
+</div></section>
+
+<footer><div class="wrap"><span>© 2026 wingmate · 18+ · made at 1:47am</span><span><a href="/privacy.html">privacy</a></span></div></footer>
+
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="ticket">
+    <button class="close" id="sheetClose" aria-label="Close">×</button>
+    <div class="pass">
+      <div class="ptag" id="passTag">EARLY ACCESS</div>
+      <div class="pnum" id="passNum">#—</div>
+      <div id="sheetTitle">you're in line.</div>
+      <div class="plogo"><svg><use href="#mark"/></svg>wingmate</div>
+    </div>
+    <div class="share">
+      <p><b>want in sooner?</b> every friend who joins with your link moves you up 25 spots. <span id="refLine" class="muted"></span></p>
+      <div class="linkbox"><input id="refLink" readonly aria-label="Your invite link"><button class="btn" id="copyBtn" type="button">copy</button></div>
+      <div class="sharerow"><a id="waShare" target="_blank" rel="noopener">whatsapp</a><a id="xShare" target="_blank" rel="noopener">x / twitter</a></div>
+      <p class="tiny" style="margin-top:12px">tip: screenshot this card and post it to your story.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+  const params = new URLSearchParams(location.search);
+  const ref = params.get("ref");
+  if (ref && /^[A-Za-z0-9_-]{10}$/.test(ref)) store.set("wm_ref", ref);
+  let pixelReady = false;
+  const track = (ev, data) => { if (pixelReady && window.fbq) fbq("track", ev, data || {}); };
+
+  // nav border on scroll
+  addEventListener("scroll", () => $("#nav").classList.toggle("scrolled", scrollY > 8), { passive: true });
+
+  // ---- live numbers (real counts only; small numbers stay hidden)
+  async function loadStats() {
+    const code = store.get("wm_code");
+    try {
+      const r = await fetch("/api/stats" + (code ? "?code=" + code : ""));
+      const s = await r.json();
+      if (s.pixelId && !pixelReady) loadPixel(s.pixelId);
+      if (typeof s.total === "number" && s.total >= 30) {
+        $("#count").hidden = false;
+        $("#count span").textContent = `${s.total.toLocaleString()} people already in line`;
+      }
+      if (typeof s.founding === "number") {
+        const left = Math.max(0, s.foundingCap - s.founding);
+        $("#barFill").style.width = Math.max(2, (s.founding / s.foundingCap) * 100) + "%";
+        $("#meterText").textContent = s.founding >= 10
+          ? `${s.founding} of ${s.foundingCap} founding spots claimed · ${left} left`
+          : `${s.foundingCap} founding spots. that's it.`;
+        if (left === 0) document.querySelectorAll('form[data-intent="founding"] .btn').forEach((b) => (b.textContent = "founding spots gone · join the list"));
+      }
+      return s;
+    } catch { return null; }
+  }
+  function loadPixel(id) {
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq("init", id); fbq("track", "PageView"); pixelReady = true;
+  }
+  loadStats();
+
+  // ---- signup
+  document.querySelectorAll("form.join").forEach((form) => {
+    const err = form.nextElementSibling;
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = form.email.value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { err.textContent = "that email doesn't look right."; form.email.focus(); return; }
+      err.textContent = "";
+      const btn = form.querySelector(".btn"); const label = btn.textContent;
+      btn.disabled = true; btn.textContent = "saving…";
+      try {
+        const r = await fetch("/api/join", { method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ email, intent: form.dataset.intent, ref: store.get("wm_ref"), source: form.dataset.source + (params.get("utm_content") ? ":" + params.get("utm_content") : ""), website: form.website.value }) });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.message || "couldn't save that. try again.");
+        store.set("wm_code", d.code);
+        track("Lead", { content_name: form.dataset.intent });
+        if (d.founding) track("InitiateCheckout", { value: 4.99, currency: "USD", content_name: "founding_reservation" });
+        openSheet(d);
+        form.reset();
+        loadStats();
+      } catch (ex) { err.textContent = ex.message.toLowerCase(); }
+      finally { btn.disabled = false; btn.textContent = label; }
+    });
+  });
+
+  function openSheet(d) {
+    $("#passTag").textContent = d.founding ? "FOUNDING MEMBER · $4.99/MO LOCKED" : "EARLY ACCESS";
+    $("#passNum").textContent = "#" + d.position.toLocaleString();
+    $("#sheetTitle").textContent = d.foundingFull ? "founding spots just ran out, but you're in line." : d.founding ? "your founding price is reserved." : "you're in line.";
+    $("#refLine").textContent = d.refs ? `${d.refs} friend${d.refs > 1 ? "s" : ""} joined so far.` : "";
+    const link = `${location.origin}/?ref=${d.code}`;
+    $("#refLink").value = link;
+    const msg = encodeURIComponent(`found an app that tells you what to text back. get in line with me: ${link}`);
+    $("#waShare").href = `https://wa.me/?text=${msg}`;
+    $("#xShare").href = `https://twitter.com/intent/tweet?text=${msg}`;
+    $("#sheet").hidden = false;
+    $("#copyBtn").focus();
+  }
+  $("#sheetClose").onclick = () => ($("#sheet").hidden = true);
+  $("#sheet").addEventListener("click", (e) => { if (e.target.id === "sheet") $("#sheet").hidden = true; });
+  addEventListener("keydown", (e) => { if (e.key === "Escape") $("#sheet").hidden = true; });
+  $("#copyBtn").onclick = async () => {
+    const i = $("#refLink");
+    try { await navigator.clipboard.writeText(i.value); } catch { i.select(); document.execCommand("copy"); }
+    $("#copyBtn").textContent = "copied"; setTimeout(() => ($("#copyBtn").textContent = "copy"), 1600);
+  };
+
+  // ---- hero phone: the 1am story, on loop
+  const chat = $("#phChat"), input = $("#phInput"), phone = $("#phone");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const el = (cls, html) => { const d = document.createElement("div"); d.className = cls; d.innerHTML = html; return d; };
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const BASE = [["stamp-time", "Friday 11:02 PM"], ["bub you", "had the best time tonight"], ["bub them", "same!! let's do it again"], ["bub you", "sunday?"], ["read", "Read Friday"]];
+  function reset() {
+    chat.innerHTML = ""; phone.querySelectorAll(".dont,.lab").forEach((n) => n.remove());
+    BASE.forEach(([c, t]) => { const n = el(c, t); n.style.animation = "none"; chat.append(n); });
+    input.className = "ph-input"; input.innerHTML = '<span class="ph">Message…</span>';
+  }
+  async function story() {
+    reset();
+    await wait(700); chat.append(el("stamp-time", "Today 1:47 AM")); chat.append(el("bub them", "wyd"));
+    await wait(900);
+    const boring = "nothing much hbu";
+    for (let i = 1; i <= boring.length; i++) { input.textContent = boring.slice(0, i); await wait(55); }
+    await wait(400); input.classList.add("bad"); phone.append(el("dont", "DON'T<br>SEND<br>THAT."));
+    await wait(1700); phone.querySelector(".dont").remove();
+    const lab = el("lab", `<div class="lab-h"><svg><use href="#mark"/></svg>wingmate<small>REPLY LAB</small></div>
+      <div class="lab-read"></div>`);
+    phone.append(lab);
+    await wait(500);
+    const read = "they're bored and thinking about you. <b>don't be the boring reply.</b>";
+    lab.querySelector(".lab-read").innerHTML = read;
+    const opts = [["CHILL", "debating sleep vs one more episode. you?"], ["FLIRTY", "texting me at 1am? interesting choice"], ["BOLD", "wide awake and a little bored. fix that thursday?"]];
+    const nodes = [];
+    for (const [t, p] of opts) { await wait(420); const n = el("opt", `<span>${t}</span><p>${p}</p>`); lab.append(n); nodes.push(n); }
+    await wait(1100); nodes[2].classList.add("pick"); nodes[0].classList.add("dimmed"); nodes[1].classList.add("dimmed");
+    await wait(800); lab.remove(); input.className = "ph-input"; input.innerHTML = '<span class="ph">Message…</span>';
+    chat.append(el("bub you", opts[2][1])); await wait(700);
+    chat.append(el("read", "Read 1:49 AM")); await wait(500);
+    const dots = el("dots", "<i></i><i></i><i></i>"); chat.append(dots); await wait(1400); dots.remove();
+    chat.append(el("bub them", "ok that was smooth 😭 thursday?"));
+    await wait(3800);
+  }
+  if (reduce) {
+    reset(); chat.append(el("stamp-time", "Today 1:47 AM"), el("bub them", "wyd"), el("bub you", "wide awake and a little bored. fix that thursday?"), el("bub them", "ok that was smooth 😭 thursday?"));
+  } else {
+    (async () => { for (;;) await story(); })();
+  }
+
+  // ---- the 1am text audit
+  const AUDIT = [
+    { time: "1:47 AM", ctx: "you went on one date. they went quiet for 3 days. then:", thread: [["them", "wyd"]],
+      choices: [
+        ["nothing much hbu", 0, "conversation over.", "you handed them nothing to reply to. they'll say \"same\" and you're back to silence."],
+        ["sleeping lol", 0, "you're awake. they know you're awake.", "and now you've closed the door you've been waiting three days for."],
+        ["why are YOU up 👀", 1, "not bad.", "playful and puts the ball back. a little safe, but it works."],
+        ["debating sleep vs one more episode. you?", 2, "this one.", "specific, a little funny, easy to answer. it starts a real conversation instead of a status update."]] },
+    { time: "9:12 PM", ctx: "you sent a long, slightly vulnerable message. they replied:", thread: [["you", "honestly i had a really good time and i'd love to do it again"], ["them", "haha"]],
+      choices: [
+        ["haha", 0, "mirroring a dead end.", "two hahas in a row is how chats die quietly."],
+        ["?", 0, "too much pressure.", "it reads as annoyed. they'll go quieter."],
+        ["ok you're clearly busy. tell me your best worst date story when you're free", 2, "this one.", "zero neediness, gives them an easy fun thing to answer, and shows you're not spiralling."],
+        ["did i say something wrong", 0, "please don't.", "it hands them the job of reassuring you. let it breathe."]] },
+    { time: "6:30 PM", ctx: "you asked if they want to get dinner this week.", thread: [["them", "i'm just really busy rn"]],
+      choices: [
+        ["no worries!", 1, "fine, but it ends things.", "polite, but you've left no next step. it's on them now, and \"busy\" people rarely pick it back up."],
+        ["busy with what?", 0, "that's an interrogation.", "even if you're curious, it reads as suspicious."],
+        ["totally get it. i'm around thursday if things calm down", 2, "this one.", "no chasing, no guilt, and a door left open. if they're interested, they'll walk through it."],
+        ["ok.", 0, "the full stop says everything.", "and none of it good."]] },
+  ];
+  const card = $("#auditCard");
+  let qi = 0, score = 0;
+  function renderQ() {
+    const q = AUDIT[qi];
+    card.innerHTML = `
+      <div class="scenario"><div class="sc-meta"><span>text ${qi + 1} of ${AUDIT.length}</span><span>${q.time}</span></div>
+        <div class="sc-ctx">${q.ctx}</div><div class="sc-thread">${q.thread.map(([w, t]) => `<div class="bub ${w}" style="animation:none">${t}</div>`).join("")}</div></div>
+      <div><div class="choices">${q.choices.map((c, i) => `<button class="choice" data-i="${i}">${c[0]}</button>`).join("")}</div>
+        <div id="verdictSlot"></div>
+        <div class="audit-nav"><div class="progress">${AUDIT.map((_, i) => `<i class="${i <= qi ? "on" : ""}"></i>`).join("")}</div></div></div>`;
+    card.querySelectorAll(".choice").forEach((b) => b.onclick = () => pick(+b.dataset.i));
+  }
+  function pick(i) {
+    const q = AUDIT[qi]; const c = q.choices[i];
+    const best = q.choices.findIndex((x) => x[1] === 2);
+    if (c[1] === 2) score++;
+    card.querySelectorAll(".choice").forEach((b, j) => { b.disabled = true; if (j === best) b.classList.add("right"); else if (j === i) b.classList.add("wrong"); });
+    $("#verdictSlot").innerHTML = `<div class="verdict"><b>${c[2]}</b>${c[3]}${c[1] !== 2 ? `<br><span class="muted">wingmate would send: “${q.choices[best][0]}”</span>` : ""}</div>`;
+    const nav = card.querySelector(".audit-nav");
+    const next = document.createElement("button"); next.className = "btn"; next.textContent = qi < AUDIT.length - 1 ? "next text →" : "see my score";
+    next.onclick = () => { qi++; qi < AUDIT.length ? renderQ() : result(); };
+    nav.append(next); next.focus();
+    track("ViewContent", { content_name: `audit_q${qi + 1}` });
+  }
+  function result() {
+    const lines = ["you need us. badly. (lovingly.)", "the instincts are there. the 1am texts are not.", "solid. wingmate would've saved one of those.", "honestly? you're good. wingmate is for the nights you're not."];
+    card.innerHTML = `<div class="result" style="grid-column:1/-1">
+      <div class="score">${score}<small>/3</small></div>
+      <h3 style="font-size:30px;margin-top:10px">${lines[score]}</h3>
+      <p class="muted" style="margin:10px auto 22px;max-width:44ch">wingmate gives you this read on your real chats, every time.</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><a class="btn" href="#founding" style="text-decoration:none">get early access</a><button class="btn ghost" id="again">try again</button><button class="btn ghost" id="shareScore">share my score</button></div></div>`;
+    $("#again").onclick = () => { qi = 0; score = 0; renderQ(); };
+    $("#shareScore").onclick = async () => {
+      const t = `i got ${score}/3 on the 1am text audit 💀 ${location.origin}/#audit`;
+      try { await navigator.clipboard.writeText(t); $("#shareScore").textContent = "copied, go post it"; } catch { $("#shareScore").textContent = t; }
+    };
+    track("ViewContent", { content_name: "audit_done", value: score });
+  }
+  renderQ();
+
+  // returning visitor: show their pass
+  if (store.get("wm_code") && params.has("me")) loadStats().then((s) => s && s.me && openSheet({ ...s.me, code: store.get("wm_code") }));
+})();
+</script>
+</body>
+</html>
