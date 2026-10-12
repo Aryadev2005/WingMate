@@ -1,0 +1,25 @@
+# Local / single-server stack: API (scaled), Postgres, Redis.
+#   cp backend/.env.example backend/.env   # fill in JWT_SECRET and LLM_API_KEY
+#   docker compose up --build --scale api=2
+services:
+  api:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgres://wingmate:wingmate@db:5432/wingmate
+      REDIS_URL: redis://redis:6379
+    ports: ["8080-8081:8080"]
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_started }
+    restart: unless-stopped
+  db:
+    image: postgres:16-alpine
+    environment: { POSTGRES_USER: wingmate, POSTGRES_PASSWORD: wingmate, POSTGRES_DB: wingmate }
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD", "pg_isready", "-U", "wingmate"], interval: 5s, retries: 10 }
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+volumes:
+  pgdata:

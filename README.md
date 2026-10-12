@@ -1,0 +1,122 @@
+# Wingmate
+
+A private AI dating and relationship advisor for adults 18–30, anywhere in the world. Decode their texts, draft your reply, spot red flags, get through a breakup.
+
+```
+mobile/    Expo (React Native) app for iOS and Android
+backend/   Node 22 + Fastify API, Postgres, Redis, any OpenAI-compatible LLM
+```
+
+## What we fixed vs. Hot Girl Hotline
+
+Hot Girl Hotline launched recently and has almost no public user reviews yet. These fixes target its documented weak points (from its listing and press) plus the most common complaints about AI advice apps in general.
+
+| Complaint | Source | What Wingmate does |
+|---|---|---|
+| Phone number required to sign up | HGH listing | Anonymous account. No phone, no email. Token stored in the device keychain. |
+| Paywall hits after a few messages, without warning | HGH listing | Live "N of 5 left today" counter, resets daily. Failed replies are never charged. |
+| Pricing not clear before paying | HGH listing | `/v1/plans` + paywall show prices up front; store prices are localized per country. |
+| Only for women | HGH positioning | All genders and orientations. The AI never assumes the other person's gender. |
+| Language support unclear | HGH listing | Replies in whatever language the user writes in. |
+| Crisis help locked behind a paywall | Category risk | Crisis messages are **always free**, never blocked by the quota, and show local helplines instantly. |
+| Generic advice that forgets context | Category complaint | Profile (situation, tone) in every prompt, plus a rolling summary of long chats. Last chat resumes on open. |
+| AI just agrees with you | Category complaint | Prompt requires honest, specific advice, not validation. User picks Gentle / Straight-up / Funny. |
+| Privacy fears (chats leaked or sold) | Category complaint | One-tap full account deletion, data export, no data sold, minimal data stored. |
+| AI helps with manipulation or snooping | Category risk | Refuses jealousy games, phone-checking, pressure about sex; offers a healthier route. |
+
+## Backend
+
+**Stack:** Fastify, Postgres (plain SQL, auto-migrations with advisory lock), Redis (quotas, rate limits, locks), Zod validation, JWT + rotating refresh tokens.
+
+### Endpoints
+
+| Method | Path | |
+|---|---|---|
+| POST | `/v1/auth/anonymous` | Create account, returns access + refresh tokens |
+| POST | `/v1/auth/refresh` | Rotate refresh token |
+| GET | `/v1/me` | Plan, today's usage, profile |
+| PUT | `/v1/me/profile` | Save profile (18+ enforced) |
+| GET | `/v1/me/export` | Download all your data |
+| DELETE | `/v1/me` | Delete account and every chat |
+| GET/POST | `/v1/conversations` | List / create chats |
+| GET | `/v1/conversations/:id/messages` | History (paginated) |
+| POST | `/v1/conversations/:id/messages` | Send; reply streams as SSE: `safety`, `delta`, `done`, `error` |
+| DELETE | `/v1/conversations/:id` | Delete a chat |
+| GET | `/v1/plans`, `/v1/helplines?country=US` | Public info |
+| POST | `/v1/webhooks/revenuecat` | Subscription sync |
+| GET | `/health`, `/ready` | Liveness / readiness |
+
+### Cheap LLM, healthy margin
+
+No Claude or OpenAI key required. Point `LLM_BASE_URL` at any OpenAI-compatible provider (OpenRouter, DeepSeek, Gemini's OpenAI endpoint, Groq, Together) and pick a cheap model. A second provider can be set as automatic fallback.
+
+Token savings built in:
+- Short system prompt; only the last 8 messages are sent.
+- Older messages are folded into an ~80-word running summary.
+- Reply length capped (350 tokens free, 600 Plus).
+- If the user closes the app mid-reply, the upstream request is cancelled, so you stop paying.
+- Every reply stores prompt/completion tokens and cost (`messages.cost_micros`), so margin is measurable per user:
+
+```sql
+SELECT date_trunc('day', created_at) d, count(*) replies, sum(cost_micros)/1e6 AS usd
+FROM messages WHERE role='assistant' GROUP BY 1 ORDER BY 1 DESC;
+```
+
+Rough math at $0.30 / $1.00 per million input/output tokens: a typical reply is ~900 input + 150 output tokens ≈ **$0.0004**. A heavy Plus user sending 50 messages a day costs ≈ $0.63/month against $7.99. Set your provider's real prices in `.env` and check the query above.
+
+### Built for 1 lakh users
+
+- Stateless API: scale horizontally behind a load balancer; `WEB_CONCURRENCY` runs one Node process per core.
+- Atomic Redis quotas, per-user and per-IP rate limits, and one in-flight reply per user (stops parallel-request abuse).
+- Indexed queries only; cursor pagination; DB statement timeout; graceful shutdown.
+- LLM first-token and total timeouts; fallback provider if the primary fails before streaming.
+
+Load test on a 2-core sandbox (API ×4 processes, Postgres, Redis and a fake LLM streaming ~1s replies, all on the same box):
+
+| Test | Result |
+|---|---|
+| 500 users send a message at the same instant | 500/500 succeeded, p50 2.9s, p95 4.0s (includes the 1s simulated model time) |
+| Authenticated reads (`GET /v1/me`), 100 connections | ~2,900 req/s, p50 28ms, p99 110ms, 0 errors |
+
+1 lakh registered users typically means a few hundred chatting at the same moment at peak, which a couple of 2-vCPU instances plus managed Postgres and Redis cover. Your LLM provider's rate limit is usually the real ceiling; raise it before launch.
+
+### Run it
+
+```bash
+cd backend
+cp .env.example .env        # set JWT_SECRET and LLM_API_KEY
+docker compose -f ../docker-compose.yml up --build
+# or without Docker: npm install && npm run dev
+```
+
+Tests (19 integration tests against real Postgres + Redis, fake LLM):
+
+```bash
+cd backend && npm test
+# load test with no LLM cost:
+PORT=9999 node scripts/fake-llm.mjs &
+LLM_BASE_URL=http://127.0.0.1:9999 npm run dev &
+API_URL=http://localhost:8080 RC_SECRET=<your secret> USERS=500 npm run loadtest
+```
+
+CI runs typecheck and tests on every push (`.github/workflows/backend.yml`).
+
+## Mobile
+
+Expo SDK 57, TypeScript. Screens: onboarding (18+ gate, country, situation, interested in, tone), streaming chat with copyable draft replies and safety cards, Plus paywall (RevenueCat), settings with account deletion.
+
+```bash
+cd mobile
+npm install
+EXPO_PUBLIC_API_URL=http://<your-ip>:8080 npx expo start
+```
+
+Subscriptions need a development build (`npx expo run:ios` / `run:android` or EAS Build), plus:
+- `EXPO_PUBLIC_RC_IOS_KEY`, `EXPO_PUBLIC_RC_ANDROID_KEY` from RevenueCat
+- A RevenueCat webhook to `https://<api>/v1/webhooks/revenuecat` with the same secret as `REVENUECAT_WEBHOOK_SECRET`
+
+## Before launch
+
+- Have a professional review the crisis helplines (`backend/src/services/safety.ts`) and the safety wording.
+- Write a privacy policy and terms (required by both stores for an AI chat app).
+- Pick a final name and check trademarks; "Wingmate" is a working title.
