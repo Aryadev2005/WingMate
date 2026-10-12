@@ -16,6 +16,10 @@ export type Message = { id?: number; role: "user" | "assistant"; content: string
 export type Helplines = { lines: { name: string; contact: string }[]; directory: string; emergency: string };
 export type Plans = { free: { messagesPerDay: number }; plus: { messagesPerDay: number; monthly: string; yearly: string; trialDays: number } };
 
+export type AssistMode = "reply" | "opener" | "bio";
+export type AssistTone = "flirty" | "funny" | "smooth" | "chill" | "bold";
+export type AssistResult = { suggestions: string[]; feedback?: string; safety?: Helplines; remaining: number; plan: "free" | "plus" };
+
 export class ApiError extends Error {
   constructor(readonly code: string, message: string, readonly status = 0) {
     super(message);
@@ -73,6 +77,8 @@ export const api = {
   conversations: () => request<{ conversations: { id: string; title: string; updated_at: string }[] }>("/v1/conversations"),
   newConversation: () => request<{ id: string }>("/v1/conversations", { method: "POST", body: "{}" }),
   messages: (id: string) => request<{ messages: Message[] }>(`/v1/conversations/${id}/messages`),
+  assist: (b: { mode: AssistMode; tone: AssistTone; text?: string; image?: string; avoid?: string[] }) =>
+    request<AssistResult>("/v1/assist", { method: "POST", body: JSON.stringify(b) }),
   deleteAccount: async () => {
     await request<void>("/v1/me", { method: "DELETE" });
     access = null;

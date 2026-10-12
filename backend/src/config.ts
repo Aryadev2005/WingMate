@@ -24,6 +24,11 @@ const schema = z.object({
   LLM_FALLBACK_BASE_URL: z.string().default(""),
   LLM_FALLBACK_API_KEY: z.string().default(""),
   LLM_FALLBACK_MODEL: z.string().default(""),
+  // Model used for screenshots. Must accept images. Defaults to the primary provider/model.
+  LLM_VISION_BASE_URL: z.string().default(""),
+  LLM_VISION_API_KEY: z.string().default(""),
+  LLM_VISION_MODEL: z.string().default(""),
+  MAX_IMAGE_BYTES: num(1_500_000),
   LLM_FIRST_TOKEN_TIMEOUT_MS: num(20000),
   LLM_TOTAL_TIMEOUT_MS: num(60000),
 

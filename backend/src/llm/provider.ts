@@ -2,7 +2,9 @@
 // Gemini's OpenAI endpoint, Groq, Together, etc. Falls back to a second provider only
 // if the first fails before any text has streamed, so a user never sees a half answer twice.
 
-export type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
+export type ContentPart = { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } };
+export type ChatMessage = { role: "system" | "user" | "assistant"; content: string | ContentPart[] };
+const textOf = (c: ChatMessage["content"]) => (typeof c === "string" ? c : c.map((p) => (p.type === "text" ? p.text : "x".repeat(4000))).join(""));
 export type Provider = { baseUrl: string; apiKey: string; model: string };
 export type Usage = { promptTokens: number; completionTokens: number };
 export type ChatResult = { text: string; usage: Usage; model: string };
@@ -76,7 +78,7 @@ async function streamOnce(
     return {
       text,
       model: p.model,
-      usage: usage ?? { promptTokens: estimate(messages.map((m) => m.content).join("")), completionTokens: estimate(text) },
+      usage: usage ?? { promptTokens: estimate(messages.map((m) => textOf(m.content)).join("")), completionTokens: estimate(text) },
     };
   } catch (e) {
     if (e instanceof LlmError) throw new LlmError(e.message, e.status, text.length > 0);

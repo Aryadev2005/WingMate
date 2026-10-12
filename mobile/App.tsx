@@ -7,6 +7,7 @@ import { api, ApiError, type Me } from "./src/api";
 import { Chat } from "./src/screens/Chat";
 import { Onboarding } from "./src/screens/Onboarding";
 import { Paywall, RC_KEY } from "./src/screens/Paywall";
+import { ReplyLab } from "./src/screens/ReplyLab";
 import { Settings } from "./src/screens/Settings";
 import { useTheme } from "./src/theme";
 import { Button } from "./src/ui";
@@ -25,6 +26,7 @@ function Root() {
   const t = useTheme();
   const [me, setMe] = useState<Me | null>(null);
   const [screen, setScreen] = useState<Screen>("chat");
+  const [tab, setTab] = useState<"chat" | "lab">("chat");
   const [err, setErr] = useState("");
 
   const load = useCallback(async () => {
@@ -58,6 +60,8 @@ function Root() {
   }
 
   const needsProfile = !me.profile || screen === "profile";
+  const onPaywall = () => setScreen("paywall");
+  const onUsage = (used: number) => setMe((m) => (m ? { ...m, usage: { ...m.usage, used } } : m));
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
       <StatusBar style="auto" />
@@ -86,7 +90,22 @@ function Root() {
       ) : screen === "settings" ? (
         <Settings me={me} onEditProfile={() => setScreen("profile")} onDeleted={() => { setMe(null); setScreen("chat"); load(); }} onClose={() => setScreen("chat")} />
       ) : (
-        <Chat me={me} onPaywall={() => setScreen("paywall")} onUsage={(used) => setMe((m) => (m ? { ...m, usage: { ...m.usage, used } } : m))} />
+        <>
+          <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingTop: 10 }} accessibilityRole="tablist">
+            {(["chat", "lab"] as const).map((k) => (
+              <Pressable
+                key={k}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: tab === k }}
+                onPress={() => setTab(k)}
+                style={{ flex: 1, paddingVertical: 9, borderRadius: 12, alignItems: "center", backgroundColor: tab === k ? t.ink : t.sunk }}
+              >
+                <Text style={{ color: tab === k ? t.bg : t.ink, fontWeight: "600" }}>{k === "chat" ? "Coach" : "Reply Lab"}</Text>
+              </Pressable>
+            ))}
+          </View>
+          {tab === "chat" ? <Chat me={me} onPaywall={onPaywall} onUsage={onUsage} /> : <ReplyLab me={me} onPaywall={onPaywall} onUsage={onUsage} />}
+        </>
       )}
     </SafeAreaView>
   );

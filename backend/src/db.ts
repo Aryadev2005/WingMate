@@ -58,6 +58,21 @@ const MIGRATIONS: string[] = [
   );
   CREATE INDEX messages_conversation ON messages(conversation_id, id);
   `,
+  // Reply Lab usage. Stores cost only: screenshots and pasted text are never saved.
+  `
+  CREATE TABLE assist_events (
+    id bigserial PRIMARY KEY,
+    user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    mode text NOT NULL,
+    with_image boolean NOT NULL,
+    model text,
+    prompt_tokens int NOT NULL DEFAULT 0,
+    completion_tokens int NOT NULL DEFAULT 0,
+    cost_micros int NOT NULL DEFAULT 0,
+    created_at timestamptz NOT NULL DEFAULT now()
+  );
+  CREATE INDEX assist_events_created ON assist_events(created_at);
+  `,
 ];
 
 /** Applies pending migrations. An advisory lock keeps concurrent replicas from racing. */

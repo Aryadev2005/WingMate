@@ -24,6 +24,30 @@ Hot Girl Hotline launched recently and has almost no public user reviews yet. Th
 | Privacy fears (chats leaked or sold) | Category complaint | One-tap full account deletion, data export, no data sold, minimal data stored. |
 | AI helps with manipulation or snooping | Category risk | Refuses jealousy games, phone-checking, pressure about sex; offers a healthier route. |
 
+## Reply Lab (Rizz and Plug AI features, done better)
+
+A second tab next to the Coach chat:
+
+| Mode | Input | Output |
+|---|---|---|
+| Reply to a chat | Screenshot or pasted conversation | 3 next messages to send |
+| Opening line | Screenshot of their profile, or their bio | 3 openers that mention something specific |
+| Fix my bio | Your own profile | Honest feedback + 3 rewritten bios |
+
+Pick a vibe (Smooth, Flirty, Funny, Chill, Bold), tap a suggestion to copy it, or "More like this" for fresh options that don't repeat.
+
+Fixes for what users complain about in those apps' App Store reviews:
+
+| Their complaint | Wingmate |
+|---|---|
+| Replies are cheesy / "cringe" | Prompt bans pickup-line clichés and requires short, natural messages that reference the actual chat or profile. |
+| Generation loads forever | First-token and total timeouts, fallback provider, clear error, and the try is refunded. |
+| Random, odd replies | Model output must be valid JSON in the expected shape or it's rejected and refunded. |
+| Keyboard extension gets stuck or grows | No keyboard extension. Copy-to-clipboard instead. |
+| Subscription required up front | Shares the free daily allowance with chat. |
+
+Screenshots are shrunk on the phone before upload (cheaper vision tokens, faster), sent to the vision model, and never stored. Only cost and mode are logged (`assist_events`).
+
 ## Backend
 
 **Stack:** Fastify, Postgres (plain SQL, auto-migrations with advisory lock), Redis (quotas, rate limits, locks), Zod validation, JWT + rotating refresh tokens.
@@ -42,13 +66,14 @@ Hot Girl Hotline launched recently and has almost no public user reviews yet. Th
 | GET | `/v1/conversations/:id/messages` | History (paginated) |
 | POST | `/v1/conversations/:id/messages` | Send; reply streams as SSE: `safety`, `delta`, `done`, `error` |
 | DELETE | `/v1/conversations/:id` | Delete a chat |
+| POST | `/v1/assist` | Reply Lab: `{mode: reply\|opener\|bio, tone, text?, image?, avoid?}` → 3 suggestions |
 | GET | `/v1/plans`, `/v1/helplines?country=US` | Public info |
 | POST | `/v1/webhooks/revenuecat` | Subscription sync |
 | GET | `/health`, `/ready` | Liveness / readiness |
 
 ### Cheap LLM, healthy margin
 
-No Claude or OpenAI key required. Point `LLM_BASE_URL` at any OpenAI-compatible provider (OpenRouter, DeepSeek, Gemini's OpenAI endpoint, Groq, Together) and pick a cheap model. A second provider can be set as automatic fallback.
+No Claude or OpenAI key required. Point `LLM_BASE_URL` at any OpenAI-compatible provider (OpenRouter, DeepSeek, Gemini's OpenAI endpoint, Groq, Together) and pick a cheap model. Reply Lab screenshots need an image-capable model: set `LLM_VISION_MODEL` if your main model is text-only. A second provider can be set as automatic fallback.
 
 Token savings built in:
 - Short system prompt; only the last 8 messages are sent.
@@ -89,7 +114,7 @@ docker compose -f ../docker-compose.yml up --build
 # or without Docker: npm install && npm run dev
 ```
 
-Tests (19 integration tests against real Postgres + Redis, fake LLM):
+Tests (27 integration tests against real Postgres + Redis, fake LLM):
 
 ```bash
 cd backend && npm test

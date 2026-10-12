@@ -23,6 +23,16 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "scheme": "wingmate"
+    "scheme": "wingmate",
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Wingmate uses your photos so you can pick screenshots of chats or profiles to get reply suggestions.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
+    ]
   }
 }

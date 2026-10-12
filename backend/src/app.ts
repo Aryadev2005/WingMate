@@ -10,8 +10,9 @@ import { LlmClient } from "./llm/provider.js";
 import { hit, usedToday } from "./services/limits.js";
 import { helplinesFor } from "./services/safety.js";
 import { chatRoutes } from "./routes/chat.js";
+import { assistRoutes } from "./routes/assist.js";
 
-export type Deps = { cfg: Config; db: Db; redis: Redis; llm: LlmClient };
+export type Deps = { cfg: Config; db: Db; redis: Redis; llm: LlmClient; vision: LlmClient };
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -194,6 +195,7 @@ export async function buildApp(deps: Deps): Promise<FastifyInstance> {
   });
 
   await app.register(chatRoutes);
+  await app.register(assistRoutes);
   return app;
 }
 
@@ -203,5 +205,12 @@ export function makeDeps(cfg: Config, db: Db): Deps {
   if (cfg.LLM_FALLBACK_BASE_URL && cfg.LLM_FALLBACK_MODEL) {
     providers.push({ baseUrl: cfg.LLM_FALLBACK_BASE_URL, apiKey: cfg.LLM_FALLBACK_API_KEY, model: cfg.LLM_FALLBACK_MODEL });
   }
-  return { cfg, db, redis, llm: new LlmClient(providers, cfg.LLM_FIRST_TOKEN_TIMEOUT_MS, cfg.LLM_TOTAL_TIMEOUT_MS) };
+  const vision = cfg.LLM_VISION_MODEL
+    ? [{ baseUrl: cfg.LLM_VISION_BASE_URL || cfg.LLM_BASE_URL, apiKey: cfg.LLM_VISION_API_KEY || cfg.LLM_API_KEY, model: cfg.LLM_VISION_MODEL }, ...providers.slice(1)]
+    : providers;
+  return {
+    cfg, db, redis,
+    llm: new LlmClient(providers, cfg.LLM_FIRST_TOKEN_TIMEOUT_MS, cfg.LLM_TOTAL_TIMEOUT_MS),
+    vision: new LlmClient(vision, cfg.LLM_FIRST_TOKEN_TIMEOUT_MS, cfg.LLM_TOTAL_TIMEOUT_MS),
+  };
 }
