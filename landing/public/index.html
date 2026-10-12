@@ -361,7 +361,7 @@ footer a{color:var(--muted)}
         $("#meterText").textContent = s.founding >= 10
           ? `${s.founding} of ${s.foundingCap} founding spots claimed · ${left} left`
           : `${s.foundingCap} founding spots. that's it.`;
-        if (left === 0) document.querySelectorAll('form[data-intent="founding"] .btn').forEach((b) => (b.textContent = "founding spots gone · join the list"));
+        if (left === 0) document.querySelectorAll('form[data-intent="founding"]:not([data-done]) .btn').forEach((b) => (b.textContent = "founding spots gone · join the list"));
       }
       return s;
     } catch { return null; }
@@ -377,6 +377,7 @@ footer a{color:var(--muted)}
     const err = form.nextElementSibling;
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
+      if (lastPass && form.dataset.done) { openSheet(lastPass); return; }
       const email = form.email.value.trim();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { err.textContent = "that email doesn't look right."; form.email.focus(); return; }
       err.textContent = "";
@@ -390,13 +391,24 @@ footer a{color:var(--muted)}
         store.set("wm_code", d.code);
         track("Lead", { content_name: form.dataset.intent });
         if (d.founding) track("InitiateCheckout", { value: 4.99, currency: "USD", content_name: "founding_reservation" });
+        lastPass = d;
         openSheet(d);
-        form.reset();
+        markDone(email);
         loadStats();
-      } catch (ex) { err.textContent = ex.message.toLowerCase(); }
-      finally { btn.disabled = false; btn.textContent = label; }
+      } catch (ex) { err.textContent = ex.message.toLowerCase(); btn.textContent = label; }
+      finally { btn.disabled = false; }
     });
   });
+  // after a successful signup every form shows "you're in" instead of looking empty/unsubmitted
+  let lastPass = null;
+  function markDone(email) {
+    document.querySelectorAll("form.join").forEach((f) => {
+      f.dataset.done = "1";
+      f.email.value = email; f.email.readOnly = true;
+      f.querySelector(".btn").textContent = "you're in ✓ see your pass";
+    });
+    document.querySelectorAll(".formerr").forEach((p) => (p.textContent = ""));
+  }
 
   function openSheet(d) {
     $("#passTag").textContent = d.founding ? "FOUNDING MEMBER · $4.99/MO LOCKED" : "EARLY ACCESS";
